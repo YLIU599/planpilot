@@ -1,0 +1,30 @@
+[project]
+name = "planpilot"
+version = "0.1.0"
+description = "PlanPilot: Adaptive Scheduling Agent for academic and project work"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.7.0",
+  "python-dotenv>=1.0.1",
+  "jinja2>=3.1.4",
+  "python-multipart>=0.0.9",
+  "litellm>=1.44.0",
+  "google-auth>=2.30.0",
+  "google-cloud-aiplatform>=1.63.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2.0",
+  "httpx>=0.27.0",
+]
+
+[project.scripts]
+serve = "app.main:cli_serve"
+eval = "app.evals.runner:main"
+
+[tool.uv]
+# uv will generate uv.lock when you run `uv sync`.

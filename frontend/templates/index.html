@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PlanPilot</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <h1>PlanPilot</h1>
+      <p class="subtitle">Adaptive scheduling agent for academic and project work.</p>
+    </div>
+    <div class="hero-card">
+      <span>Agent loop</span>
+      <strong>Parse → Schedule → Validate → Replan</strong>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel input-panel">
+      <div class="section-title">
+        <h2>Planning inputs</h2>
+        <button id="loadSample" type="button" class="secondary">Load example</button>
+      </div>
+
+      <div class="sticky-actions">
+        <div class="action-row">
+          <button id="generate" type="button" onclick="generateSchedule()">Generate schedule</button>
+          <button id="runEval" type="button" class="secondary" onclick="runEvaluation()">Run eval</button>
+        </div>
+        <div class="replan-inline">
+          <textarea id="progress" rows="3" placeholder="Progress update for replanning, e.g. I did 30 min of Stats HW today.
+Or: I finished 1h 30 min of AI project."></textarea>
+          <button id="replan" type="button" class="secondary" onclick="replanFromProgress()">Replan</button>
+        </div>
+      </div>
+
+      <div class="preset-strip" aria-label="Example loaders">
+        <span>Quick examples</span>
+        <button id="loadBasicDemo" type="button" class="secondary">Basic</button>
+        <button id="loadDetailedDemo" type="button" class="secondary">Add details</button>
+        <button id="addCalendarBlockers" type="button" class="secondary">Add calendar</button>
+      </div>
+
+      <details class="input-group" open>
+        <summary>Calendar & availability</summary>
+        <label>Current date</label>
+        <input id="currentDate" type="date" />
+        <p class="field-help">Auto-filled from today. Change it to simulate planning from another date.</p>
+
+        <label>Fixed calendar events</label>
+        <textarea id="fixedEvents" rows="3" placeholder="Optional fixed events, e.g. class times or meetings"></textarea>
+
+        <div class="import-card">
+          <div>
+            <strong>Optional calendar import</strong>
+            <p>Upload an exported Google Calendar / Apple Calendar <code>.ics</code> file. PlanPilot extracts event titles and times into fixed events; no OAuth is needed for this demo.</p>
+          </div>
+          <input id="calendarFile" type="file" accept=".ics,text/calendar" />
+          <div id="calendarImportStatus" class="field-help"></div>
+          <div id="calendarImportPreview" class="import-preview"></div>
+        </div>
+
+        <label>Availability</label>
+        <textarea id="availability" rows="3" placeholder="When can you work? Example: weekdays 7-11pm, weekends 2-6pm, max 4h/day."></textarea>
+      </details>
+
+      <details class="input-group" open>
+        <summary>Tasks & effort details</summary>
+        <label>Tasks</label>
+        <textarea id="tasks" rows="5" placeholder="List tasks, deadlines, and rough effort if known. Example: Stats HW due Friday, problem set."></textarea>
+        <p class="field-help">Estimated hours are optional. PlanPilot can infer a tentative workload and mark estimate confidence.</p>
+
+        <label>Optional assignment details / prompt</label>
+        <textarea id="assignmentDetails" rows="3" placeholder="Optional: problem count, page count, project deliverables, rubric summary."></textarea>
+        <p class="field-help">PDF upload is intentionally omitted. Use short excerpts or your own summary to avoid storing or redistributing course materials.</p>
+      </details>
+
+      <details class="input-group" open>
+        <summary>Preferences</summary>
+        <label>Preferences</label>
+        <textarea id="preferences" rows="3" placeholder="Optional preferences: focus time, block size, switching style, lighter days."></textarea>
+
+        <label>Work style</label>
+        <select id="workStyle">
+          <option value="balanced">Balanced: keep deep work coherent but allow switching when useful</option>
+          <option value="batch">Batch: finish one task/topic before switching when possible</option>
+          <option value="rotate">Rotate: mix different tasks/topics for variety</option>
+        </select>
+        <p class="field-help">This is a soft preference. Deadlines, dependencies, and calendar conflicts still dominate.</p>
+      </details>
+    </section>
+
+    <section class="panel output-panel">
+      <div class="section-title">
+        <h2>Output</h2>
+        <span id="status" class="status">Idle</span>
+      </div>
+      <div id="summary" class="summary-card">No schedule generated yet.</div>
+      <div id="glance" class="glance-grid"></div>
+      <div id="replanChanges"></div>
+      <div id="nextSteps"></div>
+
+      <h3>Weekly schedule</h3>
+      <div id="schedule"></div>
+
+      <h3>Validation summary</h3>
+      <div id="validationSummary" class="check-list compact-checks"></div>
+      <div id="risks"></div>
+      <div id="assumptions"></div>
+
+      <details class="explain-details">
+        <summary>Why this plan</summary>
+        <div id="rationale" class="info-list"></div>
+      </details>
+
+      <h3>Parsed task table</h3>
+      <div id="parsed"></div>
+      <details class="debug-details">
+        <summary>Raw validation / evaluation JSON</summary>
+        <pre id="debug"></pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
