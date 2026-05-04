@@ -110,7 +110,7 @@ Full Google Calendar OAuth would require consent screen setup, scopes, token sto
 
 ### Cloud Run deployment
 
-Cloud Run is a good fit because the app is a containerized FastAPI service with bursty traffic. It can scale down when unused and handle live demo traffic without managing servers. That keeps the operating cost low and matches the project’s deployment requirements.
+Cloud Run is a good fit because the app is a containerized FastAPI service with bursty traffic. It can scale down when unused and handle live demo traffic without managing servers. That keeps the operating cost low and matches the project's deployment requirements.
 
 ## Bottom line
 
