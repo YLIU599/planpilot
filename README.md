@@ -1,85 +1,97 @@
 # PlanPilot: Adaptive Scheduling Agent
 
-PlanPilot is an agentic scheduling system for academic and project work. It converts messy user inputs about tasks, deadlines, fixed calendar events, availability, and work preferences into a validated personalized schedule. When progress changes, it replans the remaining work.
+PlanPilot is an adaptive scheduling agent for academic and project work. It converts messy user input about tasks, deadlines, calendar constraints, availability, and work preferences into a validated weekly schedule. When progress changes, it replans the remaining work.
 
-Live demo URL: `TO_BE_FILLED_AFTER_CLOUD_RUN_DEPLOYMENT`
-
-GitHub repo: `TO_BE_FILLED_AFTER_PUSH`
-
----
-
-## Core idea
-
-PlanPilot is not a generic calendar or to-do app. The system uses an agentic workflow:
-
-1. Parse messy natural-language planning inputs.
-2. Extract tasks, deadlines, task types, availability, and preferences.
-3. Build a structured scheduling problem.
-4. Call a deterministic scheduler tool.
-5. Validate the schedule against hard constraints.
-6. Explain the plan and replan when progress changes.
-
-The deterministic scheduler is a tool. The agent remains responsible for task understanding, preference extraction, clarification, interpretation of validation failures, and replanning.
+- Live demo: https://planpilot-407136000438.us-central1.run.app
+- GitHub repo: https://github.com/YLIU599/planpilot
+- Business document: [BUSINESS_DOCUMENT.md](BUSINESS_DOCUMENT.md)
 
 ---
 
-## What the current MVP supports
+## Why PlanPilot
 
-- Natural-language task entry with fallback parser.
-- Optional Gemini / Vertex AI parsing via LiteLLM.
-- Fixed calendar events, availability windows, and preferences.
-- Task-type aware scheduling:
-  - reading
-  - problem sets
-  - coding projects
-  - writing
-  - exam prep
-  - presentations
-  - group projects
-  - admin tasks
-- Hard-constraint validation:
-  - calendar conflicts
-  - task overlaps
-  - deadline violations
-  - daily capacity violations
-  - unscheduled work
-- Dynamic replanning from progress updates.
-- Ordered project-stage decomposition for inputs such as `needs EDA, modeling, writeup, slides`.
-- Dependency-order validation so later stages such as slides cannot appear before earlier stages such as EDA.
-- Clean validation summary, plan rationale, and replan-change explanation in the web UI.
-- Baseline evaluation against simpler scheduling strategies.
-- FastAPI backend and static web frontend.
-- Dockerfile for Cloud Run deployment.
+Real planning is not just a to-do list. Students and project workers need to account for:
+
+- fixed events such as classes, meetings, and work shifts
+- deadlines and task dependencies
+- different task types such as reading, problem sets, and coding projects
+- uncertain effort estimates
+- personal preferences such as focus time, block size, and task-switching style
+- progress changes after the original plan is created
+
+PlanPilot addresses this by combining agentic task interpretation with deterministic scheduling and validation tools.
 
 ---
 
-## Architecture
+## Core workflow
 
 ```text
 User input
   ↓
-Task Parser Agent / fallback parser
+Task parser / effort estimator
   ↓
-Preference + Constraint Extractor
+Preference and constraint extractor
   ↓
-Schedule Problem Builder
+Deterministic scheduler tool
   ↓
-Deterministic Scheduler Tool
+Schedule validator tool
   ↓
-Schedule Validator Tool
+Risk explanation and replanning
   ↓
-Risk Critic / Replanner
-  ↓
-Final schedule + explanation
+Final schedule
 ```
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for details.
+The LLM-facing layer is responsible for understanding messy user input and explaining tradeoffs. The deterministic tools enforce hard constraints such as deadlines, dependency order, calendar conflicts, and daily capacity.
 
 ---
 
-## Local setup on Windows 11
+## Current features
 
-Open PowerShell:
+### Planning inputs
+
+- Natural-language tasks and deadlines
+- Fixed calendar events
+- Availability windows
+- Work preferences
+- Work style options: Balanced, Batch, Rotate
+- Optional assignment details such as problem count, page count, rubric notes, or deliverables
+- Optional `.ics` calendar import from Google Calendar, Apple Calendar, or Outlook exports
+
+### Scheduling logic
+
+- Task-type-aware scheduling
+- Project-stage decomposition, for example: Frontend, Backend, Evaluation, Writeup
+- Dependency-order validation, so later stages cannot appear before earlier stages
+- Longer deep-work blocks for problem sets and coding projects
+- Smaller blocks for reading and lighter work
+- Replanning after progress updates
+
+### Validation and explanation
+
+The web UI reports:
+
+- first recommended block
+- weekly schedule
+- validation summary
+- risk warnings
+- planning assumptions
+- parsed task table
+- replan changes
+
+### Evaluation
+
+The app includes a repeatable evaluator comparing PlanPilot against simple baselines:
+
+- earliest-deadline-first
+- naive equal-split scheduling
+
+Metrics include objective score, conflict count, deadline violations, dependency-order violations, and unscheduled minutes.
+
+---
+
+## Local setup
+
+Open PowerShell from the project root:
 
 ```powershell
 cd "D:\##Columbia\#SPRING26\IEORE4576 Agentic AI\###Final Proj\planpilot"
@@ -91,7 +103,7 @@ Install dependencies:
 uv sync
 ```
 
-Run without LLM parsing first:
+Run the app:
 
 ```powershell
 $env:ENABLE_LLM_PARSING="false"
@@ -104,50 +116,45 @@ Open:
 http://localhost:8000
 ```
 
-The app starts blank for demo clarity. Use **Load full demo** or the example buttons to preload a scenario.
+The app starts with blank inputs. Use the **Load example** menu to preload a demo scenario.
 
 ---
 
-## Optional Vertex AI / Gemini setup
+## Optional Vertex AI / Gemini parsing
 
-This app is designed to run even without LLM parsing. To enable Gemini parsing through LiteLLM + Vertex AI, first make sure your GCP application default credentials are set:
+PlanPilot is designed to run without LLM parsing for demo reliability. To enable Gemini parsing through LiteLLM and Vertex AI:
 
 ```powershell
 gcloud auth login
 gcloud auth application-default login
-gcloud config set project YOUR_PROJECT_ID
-```
+gcloud config set project ieor-4576-agentic
 
-Then run:
-
-```powershell
-$env:VERTEX_PROJECT_ID="YOUR_PROJECT_ID"
+$env:VERTEX_PROJECT_ID="ieor-4576-agentic"
 $env:VERTEX_LOCATION="us-central1"
 $env:MODEL="vertex_ai/gemini-2.5-flash"
 $env:ENABLE_LLM_PARSING="true"
+
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-If the Vertex call fails, the app falls back to deterministic parsing rather than breaking the demo.
+If the Vertex call fails, the app can fall back to deterministic parsing instead of breaking the demo.
 
 ---
 
-## API endpoints
+## Main API endpoints
 
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/` | GET | Web UI |
-| `/healthz` | GET | Health check |
-| `/api/v1/sample` | GET | Sample planning input |
-| `/api/v1/parse` | POST | Parse raw planning text |
-| `/api/v1/generate-schedule` | POST | Generate schedule from structured input |
-| `/api/v1/plan` | POST | Parse + schedule + explain |
+| `/api/v1/sample` | GET | Load example planning input |
+| `/api/v1/parse` | POST | Parse planning input |
+| `/api/v1/plan` | POST | Parse, schedule, validate, and explain |
 | `/api/v1/replan` | POST | Apply progress update and replan |
-| `/api/v1/evaluate` | GET | Run evaluator |
+| `/api/v1/evaluate` | GET | Run evaluation |
 
 ---
 
-## Run evaluation
+## Run evaluation locally
 
 ```powershell
 uv run python -m app.evals.runner
@@ -158,13 +165,6 @@ This writes:
 ```text
 outputs/evaluation_results.json
 ```
-
-The evaluator compares PlanPilot against two baselines:
-
-1. `earliest_deadline`
-2. `naive_equal_split`
-
-Metrics include conflict count, deadline violations, dependency-order violations, unscheduled minutes, objective score, and validity rate.
 
 ---
 
@@ -185,122 +185,63 @@ http://localhost:8080
 
 ## Cloud Run deployment
 
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
-
-Short version:
-
-```powershell
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com aiplatform.googleapis.com
-
-gcloud artifacts repositories create planpilot-repo `
-  --repository-format=docker `
-  --location=us-central1 `
-  --description="PlanPilot Docker repository"
-
-gcloud builds submit --tag "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/planpilot-repo/planpilot:latest"
-
-gcloud run deploy planpilot `
-  --image "us-central1-docker.pkg.dev/YOUR_PROJECT_ID/planpilot-repo/planpilot:latest" `
-  --region us-central1 `
-  --platform managed `
-  --allow-unauthenticated `
-  --set-env-vars VERTEX_PROJECT_ID=YOUR_PROJECT_ID,VERTEX_LOCATION=us-central1,MODEL=vertex_ai/gemini-2.5-flash,ENABLE_LLM_PARSING=false
-```
-
-Enable `ENABLE_LLM_PARSING=true` after verifying Cloud Run service account has Vertex AI access.
-
----
-
-## Recommended demo script
-
-1. Click **1. Basic demo** or **Load full demo** to preload the demo scenario.
-2. Click **Generate schedule**.
-3. Show parsed tasks, schedule blocks, validation metrics, and risk warnings.
-4. Enter progress update:
+The current live demo is deployed at:
 
 ```text
-I only completed 1 hour of ML project today.
+https://planpilot-407136000438.us-central1.run.app
 ```
 
-5. Click **Replan from progress**.
-6. Show how remaining work shifts while constraints remain checked.
-7. Click **Run eval** to show repeatable evaluation metrics.
+Deployment variables used for the current project:
+
+```powershell
+$PROJECT_ID = "ieor-4576-agentic"
+$REGION = "us-central1"
+$REPO = "planpilot-repo"
+$SERVICE = "planpilot"
+$IMAGE = "$REGION-docker.pkg.dev/$PROJECT_ID/$REPO/${SERVICE}:latest"
+```
+
+Build and deploy:
+
+```powershell
+gcloud builds submit --tag $IMAGE
+
+gcloud run deploy $SERVICE `
+  --image $IMAGE `
+  --region $REGION `
+  --platform managed `
+  --allow-unauthenticated `
+  --set-env-vars "VERTEX_PROJECT=ieor-4576-agentic,VERTEX_PROJECT_ID=ieor-4576-agentic,GOOGLE_CLOUD_PROJECT=ieor-4576-agentic,VERTEX_LOCATION=us-central1,AGENT_MODEL=vertex_ai/gemini-2.5-flash,MODEL=vertex_ai/gemini-2.5-flash,ENABLE_LLM_PARSING=false"
+```
+
+For the final demo, `ENABLE_LLM_PARSING=false` is recommended for stability. Gemini parsing can be enabled later after verifying service account permissions and quota.
 
 ---
 
-## v3 reliability fixes
+## Demo flow
 
-- Project stages are now truly scheduled in dependency order, not just labeled in order.
-- The scheduler no longer allows earlier intervals before the previous project stage has finished.
-- Project-stage placement uses stronger early-placement pressure to avoid compressing all downstream stages near the deadline.
-- The validator now catches dependency-order violations and reports them in the validation summary.
-- Stage labels now distinguish stage order from repeated blocks inside the same stage, for example `stage 2/4, block 1/2`.
+Recommended 4-5 minute flow:
 
-## Project limitations
+1. Start from the blank page.
+2. Load **Add details** example.
+3. Generate a schedule.
+4. Show weekly schedule, validation summary, planning assumptions, and parsed task table.
+5. Add calendar blockers and regenerate to show calendar-aware scheduling.
+6. Enter a progress update, for example:
 
-- The fallback parser is intentionally simple; LLM parsing improves flexible natural-language handling.
-- The scheduler is a deterministic greedy scheduler, not a full CP-SAT optimizer.
-- Google Calendar OAuth is not included in MVP; manual fixed-event input is used for reliability.
-- `.ics` import and drag-and-drop calendar editing are planned future extensions.
+```text
+I only completed 30 min of Stats HW today.
+```
 
+7. Replan and show the updated remaining work and risk warnings.
+8. Run evaluation to show PlanPilot compared against baseline schedulers.
 
-## v4 UX / Planning Updates
+---
 
-- Added a **Work style** control: balanced, batch, or rotate. This lets the user state whether they prefer to stay on one task or mix topics for variety. The scheduler treats this as a soft preference; deadlines, dependencies, and calendar conflicts remain hard constraints.
-- Added an onboarding guide in the UI to make clear that the sample is editable and users can replace it with their own classes, meetings, assignments, or work projects.
-- Added explicit handling for empty or unparseable progress updates during replanning.
-- The default behavior is **balanced**: tasks are splittable unless the user says otherwise, but deep-work tasks are kept in coherent blocks and project stages still respect dependency order.
+## Project limitations and future work
 
-## v5 effort-estimation updates
-
-- Progress updates now support minute-level durations without double counting, including `30 min`, `0.5h`, `1h 30 min`, and `half an hour`.
-- Tasks no longer require explicit `estimated hours`. If the user omits an estimate, PlanPilot infers a tentative workload from task type, problem/page counts, named deliverables, and optional assignment details.
-- System-generated estimates are marked with `estimate_source=system`, `estimate_confidence`, and an `estimate_rationale`.
-- The UI now includes an optional **assignment details / prompt** field where users can paste a short summary of requirements, deliverables, rubric items, page counts, or problem counts.
-- PDF upload is intentionally not included in the MVP. This avoids storing or redistributing potentially copyrighted course materials. Users can paste brief excerpts or summaries instead; the system only needs scheduling metadata.
-
-
-## v6 targeted fixes
-
-- The UI now defaults the current date to the user's local current date instead of a hard-coded demo date.
-- The sample endpoint also returns the server's current date so relative deadlines move with the demo date.
-- Assignment details are scoped to the matching task before effort estimation. For example, a reading page count no longer turns problem sets or coding projects into reading tasks.
-- If work cannot fit under the current constraints, the summary now says the schedule has warnings rather than calling it fully valid.
-- Regression tests were added for assignment-detail scoping and effort estimation.
-
-
-## Calendar import
-
-The demo supports optional `.ics` import from Google Calendar, Apple Calendar, or Outlook exports. The browser parses the file locally and appends fixed-event lines to the calendar input box. This avoids OAuth setup and does not store uploaded calendar files. Full Google Calendar OAuth can be added later as a production extension.
-
-
-## v9 demo polish
-
-- Weekly schedule now appears earlier in the output panel for the 4-minute demo flow.
-- Schedule dates render in English regardless of browser locale.
-- `.ics` imports show a visible preview and are included automatically as fixed calendar events during scheduling.
-- Evaluation output is summarized as cards comparing PlanPilot with simple baselines.
-- Full Google Calendar OAuth is intentionally left as future work; the MVP uses `.ics` import to avoid handling calendar tokens.
-
-### v10 demo-ready UI
-
-- The app now starts blank instead of auto-loading sample content, so placeholders explain what to enter.
-- Added sticky top controls for **Generate schedule**, **Run eval**, and **Replan**, reducing the need to scroll during a 4-minute demo.
-- Added example buttons: **1. Basic demo**, **2. Add details**, and **3. Add calendar blockers**.
-- Collapsed related inputs into Calendar & availability, Tasks & effort details, and Preferences sections.
-- The rolling demo now uses an academic/project workload that shows task parsing, effort estimation, scheduling, validation, and replanning in a single scenario.
-
-
-## v11 submission UI polish
-
-- The app opens with empty inputs and placeholders, not preloaded sample text.
-- The quick example loader is now a small neutral strip rather than a large presentation-flow panel.
-- The sticky action area keeps Generate schedule, Run eval, progress update, and Replan visible near the top.
-- The progress update input is taller by default so examples are readable without resizing.
-
-
-## v12 UI action hotfix
-
-- Fixed the Generate schedule button event handler in the compressed input layout.
-- Simplified blank-state placeholders so the app opens as a clean, empty planning workspace rather than appearing prefilled.
-- Kept the sticky action area compact while preserving a taller progress-update box for replanning examples.
+- The deterministic scheduler is a greedy scheduler, not a full CP-SAT optimizer.
+- Full Google Calendar OAuth is not included in the MVP. The current app uses `.ics` import to avoid storing user calendar tokens.
+- The fallback parser is intentionally simple. LLM parsing can improve flexible natural-language handling.
+- Drag-and-drop calendar editing is future work.
+- More advanced effort estimation could use historical completion data, but the MVP avoids storing sensitive user history.
