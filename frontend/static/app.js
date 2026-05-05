@@ -360,7 +360,6 @@ async function loadDemo(stage = 'details') {
   }
 }
 
-$('loadSample').addEventListener('click', () => loadDemo('details'));
 const basicDemoButton = $('loadBasicDemo');
 if (basicDemoButton) basicDemoButton.addEventListener('click', () => loadDemo('basic'));
 const detailedDemoButton = $('loadDetailedDemo');

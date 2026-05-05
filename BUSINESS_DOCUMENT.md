@@ -1,70 +1,73 @@
+---
+title: "PlanPilot Business Document"
+geometry: margin=0.7in
+fontsize: 10pt
+---
+
 # PlanPilot Business Document
+
+**GitHub:** https://github.com/YLIU599/planpilot  
+**Live demo:** https://planpilot-407136000438.us-central1.run.app
 
 ## 1. The user
 
-PlanPilot is built for students and early-career project workers who manage several deadline-driven tasks at once. The first target user is a graduate student with weekly homework, readings, projects, part-time work, classes, and meetings. A second target user is a junior analyst, engineer, or consultant who has several project deliverables and recurring meetings but does not have a dedicated project manager.
+PlanPilot is built for students and early-career project workers who manage several deadline-driven tasks at the same time. The initial target user is a graduate student in a technical program with homework, readings, projects, classes, meetings, and part-time work. A secondary user is a junior analyst, engineer, consultant, or bootcamp participant who has project deliverables but no dedicated project manager.
 
-The most concrete initial market is students in technical master's programs. They often have coding assignments, problem sets, readings, presentations, and group projects in the same week. They also usually know their deadlines, but they do not always know how long each task will take or how to break larger projects into stages.
+The first concrete market is technical master's students. They often know what is due, but they do not always know how much time each task will take, which tasks need long focus blocks, or how to recover when they fall behind. They also use several disconnected tools: a calendar, a to-do list, class websites, and personal judgment. PlanPilot sits between those tools by turning messy planning input into a validated schedule.
 
 ## 2. The problem
 
-Today, users usually solve this with a mix of Google Calendar, a to-do list, and manual judgment. That workflow breaks down for four reasons.
+Today, most users plan manually. They put classes and meetings in Google Calendar, keep assignments in a to-do app, and mentally decide when to work. That breaks down for four reasons.
 
-First, a to-do list does not understand time. It can store "Stats HW due Monday," but it does not know whether there are enough available work blocks before Monday.
+First, a to-do list does not understand time. It can store “Stats HW due Monday,” but it does not know whether there are enough available work blocks before Monday.
 
-Second, a calendar does not understand work structure. A coding project is not the same as reading 25 pages. A project may need ordered stages such as frontend, backend, evaluation, and writeup. A schedule that places "slides" before "modeling" is technically filled in, but not useful.
+Second, a calendar does not understand work structure. Reading 25 pages is different from solving a problem set, and both are different from a coding project. A project may have ordered stages such as frontend, backend, evaluation, and writeup. A plan that schedules the writeup before the evaluation is not useful, even if the calendar is filled.
 
-Third, planning changes after the first schedule is made. If the user only completes 30 minutes of homework instead of two hours, the plan should update remaining work and reveal whether the week is still feasible.
+Third, real planning changes. If a user only finishes 30 minutes of homework instead of two hours, the plan should update remaining work and show whether the week is still feasible.
 
-Fourth, users often do not know exact effort estimates. PlanPilot lets the user provide assignment details such as problem count, page count, or project deliverables. It then produces a tentative estimate, marks the confidence level, and shows the assumptions instead of hiding uncertainty.
+Fourth, users often do not know exact effort estimates. PlanPilot lets users provide lightweight assignment details such as problem count, page count, or project deliverables. It then infers a tentative workload, marks confidence, and shows assumptions. This avoids pretending the estimate is certain.
 
-PlanPilot is useful because it turns messy planning input into a structured, validated schedule. It does not just generate a nice-looking calendar. It checks constraints, explains risks, and replans when reality changes.
+The core value is not just generating a nice calendar. PlanPilot parses messy input, builds a structured scheduling problem, checks constraints, explains risks, and replans when reality changes.
 
 ## 3. The economics
 
-### Business model
-
 A realistic business model is a freemium productivity product:
 
-- Free tier: limited weekly plans and manual input
-- Student Pro: $4.99 per month
-- Team / cohort license: sold to student organizations, bootcamps, tutoring programs, or university support offices
+- **Free tier:** limited weekly plans, manual input, and basic replanning
+- **Student Pro:** $4.99 per month for saved plans, repeated replanning, calendar import, and stronger LLM parsing
+- **Team / cohort license:** sold to bootcamps, tutoring programs, student organizations, or university support offices
 
-The student Pro plan would unlock more saved schedules, calendar imports, repeated replanning, and better LLM-based parsing.
-
-### Cost to serve one active user-month
-
-For the current MVP, the most expensive part is optional LLM parsing. The deterministic scheduler, validator, and `.ics` calendar parser are normal backend code and do not require model calls.
-
-Assumption for one active user-month:
+Back-of-envelope for one active paid user-month:
 
 - 30 schedule generations
 - 15 replans
-- 5 evaluation or analysis-style actions
-- about 50 model-assisted parsing/explanation calls if LLM parsing is enabled
-- average per call: 3,000 input tokens and 800 output tokens
+- 5 evaluation or analysis actions
+- about 50 model-assisted parsing or explanation calls if LLM parsing is enabled
+- average model call: 3,000 input tokens and 800 output tokens
 
-Monthly token usage:
+Estimated monthly token usage:
 
-- Input tokens: 50 * 3,000 = 150,000 input tokens
-- Output tokens: 50 * 800 = 40,000 output tokens
+- Input tokens: 50 x 3,000 = 150,000
+- Output tokens: 50 x 800 = 40,000
 
-Using Gemini 2.5 Flash as the model, a conservative estimate is about $0.30 per 1M input tokens and $2.50 per 1M output tokens for text usage. That gives:
+Using Gemini 2.5 Flash as a representative low-cost model, the model cost is roughly on the order of cents per active user-month. Using a conservative estimate of $0.30 per 1M input tokens and $2.50 per 1M output tokens:
 
-- Input cost: 0.15M * $0.30 = $0.045
-- Output cost: 0.04M * $2.50 = $0.10
-- Total model cost: about $0.15 per active user-month
+| Item | Calculation | Cost |
+|---|---:|---:|
+| Input tokens | 0.15M x $0.30 | $0.045 |
+| Output tokens | 0.04M x $2.50 | $0.100 |
+| Model subtotal |  | about $0.15 |
 
-Infrastructure cost is low at early scale. Cloud Run includes a free tier with 2 million requests, 180,000 vCPU-seconds, and 360,000 GiB-seconds per month in us-central1. At student-project scale, the app should remain close to free-tier usage. To be conservative, I would budget $0.05–$0.15 per active user-month for Cloud Run, logs, storage, and network overhead.
+Infrastructure cost is also low at early scale. Cloud Run has a free tier for requests, CPU-seconds, and memory-seconds. At course-project or early pilot scale, PlanPilot should stay close to free-tier usage. To be conservative, I would budget about $0.10 per active user-month for Cloud Run, logs, storage, and network overhead.
 
-Estimated variable cost per active user-month:
+Estimated variable cost per active paid user-month:
 
 | Item | Estimate |
 |---|---:|
 | Gemini parsing / explanation | $0.15 |
 | Cloud Run + logs + storage allowance | $0.10 |
 | Payment processing allowance | $0.45 |
-| Total variable cost | about $0.70 |
+| **Total variable cost** | **about $0.70** |
 
 At a $4.99 monthly price, contribution margin is about:
 
@@ -72,46 +75,33 @@ At a $4.99 monthly price, contribution margin is about:
 $4.99 - $0.70 = $4.29 per paid user-month
 ```
 
-That is roughly an 86% contribution margin before fixed costs.
-
-If fixed costs are estimated at $2,000 per month for development, maintenance, support, and operational overhead, the break-even point is:
+That is about an 86% contribution margin before fixed costs. If fixed costs are $2,000 per month for maintenance, support, and operations, break-even is:
 
 ```text
-$2,000 / $4.29 ≈ 466 paid users
+$2,000 / $4.29 = about 466 paid users
 ```
 
-This is plausible for a student productivity tool if sold through a few university programs, technical bootcamps, or student communities. The economics work best because the scheduler is mostly deterministic. The model is used only where it adds value: parsing messy input and explaining tradeoffs.
+This is plausible for a niche student productivity tool if distributed through technical student communities, tutoring programs, or bootcamps. The economics work because the system does not use the LLM for every scheduling decision. Most scheduling, validation, and calendar parsing are deterministic tools.
 
 ## 4. Why these technical choices
 
-### Agent layer plus deterministic tools
+**Agent layer plus deterministic tools.** A pure LLM planner is flexible but unreliable. It can produce hidden calendar conflicts, invalid stage ordering, or unrealistic workloads. PlanPilot uses the agent layer for interpretation and communication, then calls deterministic tools for scheduling and validation. This directly addresses the user need: students need a plan they can trust, not just a plausible-sounding response.
 
-The most important technical choice is separating the agent layer from the scheduling engine. A pure LLM planner is flexible but unstable. It may produce a schedule with hidden conflicts, invalid ordering, or unrealistic workloads. PlanPilot uses the agent layer for interpretation and communication, then uses deterministic tools for scheduling and validation.
+**Greedy deterministic scheduler.** The current scheduler is not a full CP-SAT optimizer. That is intentional for the MVP. It is fast, explainable, easy to debug, and strong enough for short-week academic planning. It supports deadlines, availability windows, daily capacity, task types, and ordered project stages. A full optimizer can be added later if the product expands to larger teams or more complex constraints.
 
-This directly serves the user because students need a schedule they can trust. It also improves the economics because the system does not call the model for every scheduling decision.
+**Validation layer.** PlanPilot checks calendar conflicts, overlapping tasks, deadline violations, dependency order, daily workload, and unscheduled work. This matters commercially because the product should not hide infeasible plans. Risk warnings are part of the value: they tell users when they need to add availability, reduce scope, or revise an estimate.
 
-### Greedy deterministic scheduler
+**Effort estimation from metadata.** Users often do not know exact durations. PlanPilot estimates from scheduling metadata such as problem count, page count, and deliverables. It marks confidence and shows the rationale. The MVP intentionally does not include PDF upload. This avoids storing or redistributing course materials. Users can paste brief excerpts or summaries instead; the system only needs metadata, not the full assignment file.
 
-The current scheduler is a deterministic greedy scheduler rather than a full optimization solver. This was a practical MVP choice. It is fast, explainable, easy to debug, and good enough for the short-week academic scheduling use case. A more advanced CP-SAT optimizer could be added later, but the current scheduler already supports deadlines, availability windows, task types, daily capacity, and project-stage order.
+**.ics calendar import instead of full OAuth.** Full Google Calendar OAuth would require consent screen setup, scopes, token storage, refresh handling, and production security work. For an MVP, `.ics` import gives most of the calendar-aware scheduling value without storing user tokens. It is safer and easier to deploy.
 
-### Validation layer
-
-PlanPilot validates calendar conflicts, task overlaps, deadline violations, dependency order, daily workload, and unscheduled work. This is essential because the product should not pretend a plan is feasible when the user does not have enough time. Risk warnings are a feature, not a failure.
-
-### Effort estimation from assignment metadata
-
-Users often do not know exact durations. PlanPilot estimates work from metadata such as problem count, page count, and deliverables. It also marks confidence and shows assumptions. This makes the tool more usable without pretending that estimates are certain.
-
-The MVP intentionally does not include PDF upload. That choice reduces implementation risk and avoids storing or redistributing course materials. Users can paste brief excerpts or summaries instead. The system only needs scheduling metadata.
-
-### `.ics` calendar import instead of full OAuth
-
-Full Google Calendar OAuth would require consent screen setup, scopes, token storage, and production security handling. For an MVP and course demo, `.ics` import gives most of the calendar-aware scheduling value without storing user tokens. It is also easier to explain and safer to deploy.
-
-### Cloud Run deployment
-
-Cloud Run is a good fit because the app is a containerized FastAPI service with bursty traffic. It can scale down when unused and handle live demo traffic without managing servers. That keeps the operating cost low and matches the project's deployment requirements.
+**Cloud Run deployment.** Cloud Run is a good fit because PlanPilot is a containerized FastAPI app with bursty usage. It can scale down when unused and handle demo or pilot traffic without server management. That keeps operating cost low and matches the project’s deployment requirement.
 
 ## Bottom line
 
-PlanPilot is commercially plausible because it addresses a real planning pain point, has a clear initial user segment, and has low variable cost. The product value comes from combining agentic interpretation with deterministic scheduling and validation. The user gets a practical schedule, not just a chatbot response.
+PlanPilot is commercially plausible because it solves a real planning pain point for a concrete initial user segment. The product value comes from combining agentic interpretation with deterministic scheduling and validation. The user gets a practical, checked schedule rather than a generic chatbot answer.
+
+## Sources
+
+- Google AI pricing for Gemini models: https://ai.google.dev/gemini-api/docs/pricing
+- Google Cloud Run pricing and free tier: https://cloud.google.com/run/pricing

@@ -89,6 +89,22 @@ Metrics include objective score, conflict count, deadline violations, dependency
 
 ---
 
+## Class concepts used
+
+PlanPilot uses the following concepts from IEOR 4576.
+
+| Course concept | How PlanPilot uses it | File references |
+|---|---|---|
+| Agent loop / orchestration | The app follows a parse → schedule → validate → replan loop rather than returning a one-shot chatbot response. | `app/main.py`, `app/agents/task_parser.py`, `app/agents/replanner.py` |
+| Tool calling pattern | The agent layer delegates reliable operations to deterministic tools: scheduler, validator, effort estimator, calendar parser, and evaluator. | `app/scheduling/engine.py`, `app/scheduling/validator.py`, `app/agents/fallback_parser.py`, `app/evals/runner.py` |
+| Structured outputs / schemas | Inputs, parsed tasks, schedule blocks, validation results, and replanning outputs are represented with typed Pydantic schemas. | `app/schemas.py` |
+| Guardrails / validation | The validator catches calendar conflicts, overlaps, deadline violations, daily capacity violations, dependency-order violations, and unscheduled work. | `app/scheduling/validator.py` |
+| Context, state, and replanning | The app keeps the original structured request, applies progress updates, and regenerates the remaining schedule from updated state. | `frontend/static/app.js`, `app/agents/replanner.py` |
+| Evaluation | PlanPilot is tested against simple baseline schedulers with repeatable metrics instead of relying only on visual inspection. | `app/evals/runner.py`, `docs/EVALUATION.md`, `tests/` |
+| Production deployment | The app is packaged as a FastAPI + Docker service and deployed publicly on Cloud Run. | `Dockerfile`, `cloudbuild.yaml`, `docs/DEPLOYMENT.md` |
+
+---
+
 ## Local setup
 
 Open PowerShell from the project root:
@@ -116,7 +132,7 @@ Open:
 http://localhost:8000
 ```
 
-The app starts with blank inputs. Use the **Load example** menu to preload a demo scenario.
+The app starts with blank inputs. Use the **Quick examples** buttons to preload a scenario.
 
 ---
 
@@ -146,7 +162,8 @@ If the Vertex call fails, the app can fall back to deterministic parsing instead
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/` | GET | Web UI |
-| `/api/v1/sample` | GET | Load example planning input |
+| `/healthz` | GET | Health check |
+| `/api/v1/sample` | GET | Load sample planning input |
 | `/api/v1/parse` | POST | Parse planning input |
 | `/api/v1/plan` | POST | Parse, schedule, validate, and explain |
 | `/api/v1/replan` | POST | Apply progress update and replan |
@@ -220,13 +237,13 @@ For the final demo, `ENABLE_LLM_PARSING=false` is recommended for stability. Gem
 
 ## Demo flow
 
-Recommended 4-5 minute flow:
+Recommended flow:
 
 1. Start from the blank page.
-2. Load **Add details** example.
+2. Use **Quick examples → Add details**.
 3. Generate a schedule.
 4. Show weekly schedule, validation summary, planning assumptions, and parsed task table.
-5. Add calendar blockers and regenerate to show calendar-aware scheduling.
+5. Use **Quick examples → Add calendar** and regenerate to show calendar-aware scheduling.
 6. Enter a progress update, for example:
 
 ```text
